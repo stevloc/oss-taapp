@@ -73,4 +73,69 @@ def test_get_message_detail_not_found(mock_get_client: Mock)-> None:
     # Verify the response detail matches the expected error message
     expected_detail = f"Message with ID {missing_id} not found."
     assert response.json()["detail"] == expected_detail
-    
+
+
+# Additional brief test cases for GET /messages
+
+@patch("mail_client_services.src.main.get_client")
+def test_get_messages_large_max_results(mock_get_client: Mock) -> None:
+    """Tests GET /messages with large max_results value."""
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.get_messages.return_value = [MOCK_MESSAGE_1]
+
+    response = client.get("/messages?max_results=1000")
+
+    mock_mail_client.get_messages.assert_called_once_with(max_results=1000)
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+@patch("mail_client_services.src.main.get_client")
+def test_get_messages_negative_max_results(mock_get_client: Mock) -> None:
+    """Tests GET /messages with negative max_results."""
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.get_messages.return_value = []
+
+    response = client.get("/messages?max_results=-5")
+
+    mock_mail_client.get_messages.assert_called_once_with(max_results=-5)
+    assert response.status_code == 200
+
+
+@patch("mail_client_services.src.main.get_client")
+def test_get_messages_single_message(mock_get_client: Mock) -> None:
+    """Tests GET /messages returning single message."""
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.get_messages.return_value = [MOCK_MESSAGE_1]
+
+    response = client.get("/messages")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["id"] == "msg_001"
+
+
+@patch("mail_client_services.src.main.get_client")
+def test_get_messages_timeout_error(mock_get_client: Mock) -> None:
+    """Tests GET /messages with timeout error."""
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.get_messages.side_effect = TimeoutError("Request timeout")
+
+    response = client.get("/messages")
+
+    assert response.status_code == 500
+    assert "Request timeout" in response.json()["detail"]
+
+
+@patch("mail_client_services.src.main.get_client")
+def test_get_messages_max_results_one(mock_get_client: Mock) -> None:
+    """Tests GET /messages with max_results=1."""
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.get_messages.return_value = [MOCK_MESSAGE_1]
+
+    response = client.get("/messages?max_results=1")
+
+    mock_mail_client.get_messages.assert_called_once_with(max_results=1)
+    assert response.status_code == 200
+    assert len(response.json()) == 1
