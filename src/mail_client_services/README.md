@@ -9,3 +9,7 @@ This package serves as the service layer for the email assistant system:
 -**Thin Wrapper**: Uses the injected client implementation and translates client method calls into network requests.
 -**Location Transparency**: Allows the system to operate regardless of whether the mail client is a local library or a remote service
 
+# API Endpoints
+
+
+# Unit Tests
