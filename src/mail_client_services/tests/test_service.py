@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 # Assuming your FastAPI code is in 'mail_client_service.main'
 # You may need to adjust this import path based on your file structure
+
 from mail_client_services.src.main import app, get_mail_client
 from unittest.mock import MagicMock
 
@@ -21,7 +22,8 @@ MOCK_MESSAGE_DATA = {
     "sender": "test@example.com",
     "timestamp": 1678886400,
     "is_read": False,
-    "body": "This is the full body content for the test message."
+    "body": "This is the full body content for the test message.",
+    "body": "This is the full body content for the test message.",
 }
 # Since Message is a Protocol, we cannot instantiate it directly; use a plain Mock or dict
 MOCK_MESSAGE = Mock(**MOCK_MESSAGE_DATA)
@@ -29,7 +31,7 @@ MOCK_MESSAGE = Mock(**MOCK_MESSAGE_DATA)
 
 # We use patch to replace 'mail_client_service.main.get_client' to control the mail_client instance
 @patch("mail_client_service.main.get_client")
-def test_get_message_detail_success(mock_get_client: Mock)-> None:
+def test_get_message_detail_success(mock_get_client: Mock) -> None:
     """Tests that a successful call to the client results in a 200 OK response
     with the correct message data.
     """
@@ -43,20 +45,25 @@ def test_get_message_detail_success(mock_get_client: Mock)-> None:
     # 3. Assertions
     # Verify the underlying dependency was called correctly
     mock_mail_client.get_message.assert_called_once_with(MOCK_MESSAGE_ID)
-    
+
+
     # Verify the HTTP response status code is 200
     assert response.status_code == 200
-    
+
+
     # Verify the response body matches the mocked Message data
     assert response.json() == MOCK_MESSAGE_DATA
 
+
+
 @patch("mail_client_service.main.get_client")
-def test_get_message_detail_not_found(mock_get_client: Mock)-> None:
+def test_get_message_detail_not_found(mock_get_client: Mock) -> None:
     """Tests that an exception from the client (e.g., message not found)
     is translated to a 404 Not Found response.
     """
     missing_id = "missing_msg_999"
-    
+
+
     # 1. Configure the mock client to raise an exception
     mock_mail_client = mock_get_client.return_value
     # Use a generic Exception to simulate any failure that your endpoint catches
@@ -67,10 +74,12 @@ def test_get_message_detail_not_found(mock_get_client: Mock)-> None:
 
     # 3. Assertions
     mock_mail_client.get_message.assert_called_once_with(missing_id)
-    
+
+
     # Verify the HTTP response status code is 404
     assert response.status_code == 404
-    
+
+
     # Verify the response detail matches the expected error message
     expected_detail = f"Message with ID {missing_id} not found."
     assert response.json()["detail"] == expected_detail
@@ -141,16 +150,19 @@ def test_get_messages_max_results_one(mock_get_client: Mock) -> None:
     assert response.status_code == 200
     assert len(response.json()) == 1
 
+
+
 @patch("mail_client_service.main.get_client")
 def test_delete_message_success(mock_get_client: Mock) -> None:
     """Tests that a successful deletion of a message results in a 200 OK response."""
-
     # 1. Mock client's behaviour
     mock_mail_client = mock_get_client.return_value
-    mock_mail_client.delete_message.return_value = None  
+    mock_mail_client.delete_message.return_value = None
+    mock_mail_client.delete_message.return_value = None
 
     # 2. Request
-    resp = client.delete(f"/messages/{MOCK_MESSAGE_ID}")    
+    resp = client.delete(f"/messages/{MOCK_MESSAGE_ID}")
+    resp = client.delete(f"/messages/{MOCK_MESSAGE_ID}")
 
     # 3. Assertions
     mock_mail_client.delete_message.assert_called_once_with(MOCK_MESSAGE_ID)
@@ -160,13 +172,14 @@ def test_delete_message_success(mock_get_client: Mock) -> None:
 @patch("mail_client_service.main.get_client")
 def test_delete_message_not_found(mock_get_client: Mock) -> None:
     """Tests that attempt to delete a non-existent message resulting in a 404 Response"""
-
-    missing_id = "ajrlejrq09r" # Non-existent message ID
+    missing_id = "ajrlejrq09r"  # Non-existent message ID
+    missing_id = "ajrlejrq09r"  # Non-existent message ID
 
     # 1. Mock client's behaviour
     mock_mail_client = mock_get_client.return_value
     mock_mail_client.delete_message.side_effect = Exception("Message not found.")
-    
+
+
     # 2. Request
     resp = client.delete(f"/messages/{missing_id}")
 
