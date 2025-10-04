@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 
 # Assuming your FastAPI code is in 'mail_client_service.main'
 # You may need to adjust this import path based on your file structure
-from mail_client_services.src.main import app
+from mail_client_services.src.main import app, get_mail_client
+from unittest.mock import MagicMock
 
 # 1. Initialize the TestClient
 client = TestClient(app)
@@ -174,4 +175,32 @@ def test_delete_message_not_found(mock_get_client: Mock) -> None:
     assert resp.status_code == 404
     assert resp.json()["detail"] == f"Message with ID {missing_id} not found."
 
+def test_mark_as_read_returns_204_and_calls_impl():
+    mock = MagicMock()
+    app.dependency_overrides[get_mail_client] = lambda: mock
 
+    resp = client.post("/messages/abc123/mark-as-read")
+
+    assert resp.status_code == 204
+    mock.mark_as_read.assert_called_once_with("abc123")
+    app.dependency_overrides.clear()
+
+def test_mark_as_read_404_when_not_found():
+    mock = MagicMock()
+    mock.mark_as_read.side_effect = KeyError("missing")
+    app.dependency_overrides[get_mail_client] = lambda: mock
+
+    resp = client.post("/messages/missing/mark-as-read")
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Message not found"
+    app.dependency_overrides.clear()
+
+def test_mark_as_read_403_on_permission_error():
+    mock = MagicMock()
+    mock.mark_as_read.side_effect = PermissionError("nope")
+    app.dependency_overrides[get_mail_client] = lambda: mock
+
+    resp = client.post("/messages/abc/mark-as-read")
+    assert resp.status_code == 403
+    app.dependency_overrides.clear()
