@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 
 from mail_client_api import get_client
 from message import Message
-
 from typing import List
 from pydantic import BaseModel
 
@@ -28,6 +27,14 @@ async def get_message_detail(message_id: str) -> Message:
         return mail_client.get_message(message_id)
     except Exception as e:
         # Raise an exception if the message is not found
+        raise HTTPException(status_code=404, detail=f"Message with ID {message_id} not found.") from e  
+
+@app.delete("/messages/{message_id}")
+async def delete_message(message_id: str) -> dict:
+    """ Deletes a single message """
+    try:
+        return mail_client.delete_message(message_id)
+    except Exception as e:
         raise HTTPException(status_code=404, detail=f"Message with ID {message_id} not found.") from e
 
 

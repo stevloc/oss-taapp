@@ -139,3 +139,39 @@ def test_get_messages_max_results_one(mock_get_client: Mock) -> None:
     mock_mail_client.get_messages.assert_called_once_with(max_results=1)
     assert response.status_code == 200
     assert len(response.json()) == 1
+
+@patch("mail_client_service.main.get_client")
+def test_delete_message_success(mock_get_client: Mock) -> None:
+    """Tests that a successful deletion of a message results in a 200 OK response."""
+
+    # 1. Mock client's behaviour
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.delete_message.return_value = None  
+
+    # 2. Request
+    resp = client.delete(f"/messages/{MOCK_MESSAGE_ID}")    
+
+    # 3. Assertions
+    mock_mail_client.delete_message.assert_called_once_with(MOCK_MESSAGE_ID)
+    assert resp.status_code == 200
+
+
+@patch("mail_client_service.main.get_client")
+def test_delete_message_not_found(mock_get_client: Mock) -> None:
+    """Tests that attempt to delete a non-existent message resulting in a 404 Response"""
+
+    missing_id = "ajrlejrq09r" # Non-existent message ID
+
+    # 1. Mock client's behaviour
+    mock_mail_client = mock_get_client.return_value
+    mock_mail_client.delete_message.side_effect = Exception("Message not found.")
+    
+    # 2. Request
+    resp = client.delete(f"/messages/{missing_id}")
+
+    # 3. Assertions
+    mock_mail_client.delete_message.assert_called_once_with(missing_id)
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == f"Message with ID {missing_id} not found."
+
+
