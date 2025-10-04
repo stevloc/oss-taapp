@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 
 from mail_client_api import get_client
 from message import Message
@@ -28,6 +28,8 @@ async def get_message_detail(message_id: str) -> Message:
     except Exception as e:
         # Raise an exception if the message is not found
         raise HTTPException(status_code=404, detail=f"Message with ID {message_id} not found.") from e  
+
+
 
 @app.delete("/messages/{message_id}")
 async def delete_message(message_id: str) -> dict:
@@ -76,4 +78,23 @@ async def get_messages(max_results: int = 10) -> List[MessageSummary]:
             detail=f"Error fetching messages: {str(e)}"
         ) from e
 
+@app.post(
+    "/messages/{message_id}/mark-as-read",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Marks a message as read",
+)
+async def mark_as_read(message_id: str) -> None:
+    """
+    Thin wrapper: delegate to the existing mail client and return 204 on success.
+    """
+    try:
+        # If your client method is named differently (e.g., mark_message_as_read),
+        # just change this one call.
+        mail_client.mark_as_read(message_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Message not found")
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to mark as read: {e}")
 
