@@ -213,6 +213,7 @@ workflows:
   # Main workflow: Build, Lint, Test (runs on all branches)
   build_and_test:
     jobs:
+<<<<<<< HEAD
       - build:
           filters:
             branches:
@@ -231,10 +232,18 @@ workflows:
                 - develop
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+      - build
+
+      - lint:
+          requires:
+            - build
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       - unit_test:
           requires:
             - build
+<<<<<<< HEAD
           filters:
             branches:
               ignore:
@@ -242,10 +251,13 @@ workflows:
                 - develop
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       - circleci_test:
           requires:
             - unit_test # Run after unit tests pass
+<<<<<<< HEAD
           filters:
             branches:
               ignore:
@@ -253,12 +265,15 @@ workflows:
                 - develop
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       # Optional: Report summary after core tests
       - report_summary:
           requires:
             - unit_test
             - circleci_test
+<<<<<<< HEAD
           filters:
             branches:
               ignore:
@@ -266,6 +281,8 @@ workflows:
                 - develop
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
   # Enhanced workflow: Full tests with real credentials (main/develop only)
   full_integration:
@@ -276,8 +293,11 @@ workflows:
               only:
                 - main
                 - develop # Add other branches as needed
+<<<<<<< HEAD
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       - lint:
           requires:
@@ -287,8 +307,11 @@ workflows:
               only:
                 - main
                 - develop
+<<<<<<< HEAD
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       - unit_test:
           requires:
@@ -298,8 +321,11 @@ workflows:
               only:
                 - main
                 - develop
+<<<<<<< HEAD
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       - circleci_test:
           requires:
@@ -309,8 +335,11 @@ workflows:
               only:
                 - main
                 - develop
+<<<<<<< HEAD
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
 
       - integration_test:
           requires:
@@ -321,9 +350,13 @@ workflows:
               only:
                 - main
                 - develop
+<<<<<<< HEAD
                 - kamen-requierd-fixes
                 - make-real-deletions
                 
+=======
+
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))
       - report_summary:
           requires:
             - unit_test
@@ -334,5 +367,8 @@ workflows:
               only:
                 - main
                 - develop
+<<<<<<< HEAD
                 - kamen-requierd-fixes
                 - make-real-deletions
+=======
+>>>>>>> parent of 0d168d9 (Kamen requierd fixes (#4))

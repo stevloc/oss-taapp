@@ -13,7 +13,9 @@ assignees: ''
 **Summary:** A clear and concise description of what the bug is.
 
 **Component(s) Affected:**
-- [ ] `mail_client_api` - Mail client abstraction
+- [ ] `message` - Message protocol
+- [ ] `mail_client_api` - Mail client protocol
+- [ ] `gmail_message_impl` - Gmail message implementation  
 - [ ] `gmail_client_impl` - Gmail client implementation
 - [ ] Testing infrastructure
 - [ ] CI/CD pipeline
@@ -165,7 +167,7 @@ If you have ideas about what might be causing this issue or how to fix it:
 ## Component Architecture Impact
 
 ### Interface Contracts
-- [ ] This bug violates an abstract contract
+- [ ] This bug violates a protocol interface
 - [ ] This bug affects dependency injection
 - [ ] This bug breaks component boundaries
 - [ ] This bug affects multiple components

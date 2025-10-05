@@ -13,8 +13,10 @@ assignees: ''
 **Brief Description:** A clear and concise description of the feature you'd like to see added.
 
 **Component(s) Affected:**
-- [ ] `mail_client_api` - Mail client abstraction (new operations)
+- [ ] `message` - Message protocol (new properties, methods)
+- [ ] `mail_client_api` - Mail client protocol (new operations)
 - [ ] `gmail_message_impl` - Gmail message implementation
+- [ ] `gmail_client_impl` - Gmail client implementation
 - [ ] New component (specify name)
 - [ ] Testing infrastructure
 - [ ] CI/CD pipeline  
@@ -50,10 +52,10 @@ result = client.new_feature_method(parameters)
 
 ### Component Architecture Impact
 
-#### New Contracts/Interfaces
-- [ ] Requires new contract definition
-- [ ] Extends existing contract
-- [ ] No contract changes needed
+#### New Protocols/Interfaces
+- [ ] Requires new protocol definition
+- [ ] Extends existing protocol
+- [ ] No protocol changes needed
 
 #### Implementation Strategy
 - [ ] Add to existing component

@@ -8,12 +8,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
-
-import gmail_client_impl
-import mail_client_api
 
 # Mark all tests in this file as e2e tests
 pytestmark = pytest.mark.e2e
@@ -21,7 +17,8 @@ pytestmark = pytest.mark.e2e
 
 @pytest.mark.local_credentials
 def test_main_script_runs_and_fetches_messages() -> None:
-    """Tests that the main.py script can be executed and successfully prints output indicating it has fetched messages.
+    """Tests that the main.py script can be executed and successfully
+    prints output indicating it has fetched messages.
 
     This test requires real credentials and a live internet connection.
     Only runs locally with credentials.json or token.json files.
@@ -47,7 +44,7 @@ def test_main_script_runs_and_fetches_messages() -> None:
     try:
         # Run the command and capture the output
         # We need to be in the right directory for the script to find its dependencies
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(
             command,
             capture_output=True,
             text=True,
@@ -59,15 +56,22 @@ def test_main_script_runs_and_fetches_messages() -> None:
         # Assert that the script's output contains expected text
         output = result.stdout
 
-        assert "Demo complete" in output
+        assert "Attempting to initialize Gmail client..." in output
+        assert "Successfully authenticated and connected" in output
+
+        # Check for test sections
+        assert "=== TEST 1: Fetching Messages ===" in output
+        assert "=== TEST 2: Getting Specific Message" in output
+        assert "=== TEST 3: Marking Message as Read" in output
+        assert "=== All Tests Completed ===" in output
 
         # Should have found at least some messages
-        if "Found Message:" in output:
+        if "Found" in output and "messages:" in output:
             # Extract number of messages found
             lines = output.split("\n")
-            found_line = next((line for line in lines if "Found Message:" in line), None)
+            found_line = next((line for line in lines if "Found" in line and "messages:" in line), None)
             if found_line:
-                pass
+                print(f"E2E test verified: {found_line}")
 
     except subprocess.TimeoutExpired:
         pytest.fail("E2E test timed out - main.py took too long to execute")
@@ -81,10 +85,10 @@ def test_main_script_runs_and_fetches_messages() -> None:
 
 
 @pytest.mark.circleci
-def test_main_script_with_env_vars_only() -> None:  # noqa: PLR0915, PLR0912, C901
-    """Tests that main.py works correctly in CI/CD environments.
+def test_main_script_with_env_vars_only() -> None:
+    """Tests that main.py works correctly in CI/CD environments using only
+    environment variables for authentication (no token.json or credentials.json).
 
-    Uses only environment variables for authentication (no token.json or credentials.json).
     This test simulates CircleCI where only environment variables are available.
     """
     main_script = Path(__file__).parent.parent.parent / "main.py"
@@ -99,14 +103,20 @@ def test_main_script_with_env_vars_only() -> None:  # noqa: PLR0915, PLR0912, C9
     if missing_vars:
         pytest.skip(f"Missing required environment variables for CI test: {missing_vars}")
     else:
-        pass
+        print("All required environment variables are set for CI test.")
     # Create a temporary main.py that uses interactive=False
     ci_main_content = """
 # ta-assignment/main.py (CI/CD version)
 
-# Import the contracts first
+# Import the protocols first
 import mail_client_api
+import message
+
+# --- TRIGGER DEPENDENCY INJECTION ---
+# By importing the implementation packages, their __init__.py files
+# run and override the factory functions in the protocol packages.
 import gmail_client_impl
+import gmail_message_impl
 
 def main() -> None:
     \"\"\"Initializes the client and demonstrates all mail client methods.\"\"\"
@@ -185,7 +195,7 @@ if __name__ == "__main__":
             command = [sys.executable, str(ci_main_script)]
 
             # Run the CI version
-            result = subprocess.run(  # noqa: S603
+            result = subprocess.run(
                 command,
                 capture_output=True,
                 text=True,
@@ -210,7 +220,7 @@ if __name__ == "__main__":
                 lines = output.split("\n")
                 found_line = next((line for line in lines if "Found" in line and "messages:" in line), None)
                 if found_line:
-                    pass
+                    print(f"CI E2E test verified: {found_line}")
 
         finally:
             # Restore backup files
@@ -231,35 +241,62 @@ if __name__ == "__main__":
 
 
 @pytest.mark.local_credentials
-def test_main_script_handles_no_credentials_gracefully(tmp_path: Path) -> None:
-    """Ensure the Gmail client raises a helpful error when no credentials are provided."""
-    patched_env = {
-        "GMAIL_CLIENT_ID": "",
-        "GMAIL_CLIENT_SECRET": "",
-        "GMAIL_REFRESH_TOKEN": "",
-        "GMAIL_TOKEN_URI": "https://oauth2.googleapis.com/token",
-    }
+def test_main_script_handles_no_credentials_gracefully() -> None:
+    """Tests that main.py handles missing credentials gracefully."""
+    main_script = Path(__file__).parent.parent.parent / "main.py"
 
-    dummy_token_path = tmp_path / "token.json"
-    dummy_credentials_path = tmp_path / "credentials.json"
+    if not main_script.exists():
+        pytest.skip(f"main.py not found at {main_script}")
 
-    with (
-        patch.dict(os.environ, patched_env, clear=False),
-        patch.object(gmail_client_impl.GmailClient, "TOKEN_PATH", str(dummy_token_path)),
-        patch.object(gmail_client_impl.GmailClient, "CREDENTIALS_PATH", str(dummy_credentials_path)),
-        pytest.raises(RuntimeError) as excinfo,
-    ):
-        mail_client_api.get_client(interactive=False)
+    # Temporarily rename credentials files if they exist
+    credentials_file = main_script.parent / "credentials.json"
+    token_file = main_script.parent / "token.json"
 
-    message = str(excinfo.value)
-    assert "No valid credentials found" in message
-    assert "Please provide valid credentials" in message
+    backup_files = []
+
+    try:
+        # Backup existing credential files
+        if credentials_file.exists():
+            backup_cred = credentials_file.with_suffix(".json.backup")
+            credentials_file.rename(backup_cred)
+            backup_files.append((credentials_file, backup_cred))
+
+        if token_file.exists():
+            backup_token = token_file.with_suffix(".json.backup")
+            token_file.rename(backup_token)
+            backup_files.append((token_file, backup_token))
+
+        command = [sys.executable, str(main_script)]
+
+        # Run without credentials - should handle gracefully
+        result = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=str(main_script.parent),
+        )
+
+        # Script should fail gracefully, not crash
+        # Check that it at least tried to initialize
+        output = result.stdout + result.stderr
+        assert "Attempting to initialize Gmail client..." in output
+
+        # Should mention credential issues
+        credentials_mentioned = any(word in output.lower() for word in ["credentials", "token", "auth", "login"])
+        assert credentials_mentioned, "Error output should mention credential issues"
+
+    finally:
+        # Restore backup files
+        for original, backup in backup_files:
+            if backup.exists():
+                backup.rename(original)
 
 
 @pytest.mark.circleci
 def test_main_script_syntax_is_valid() -> None:
     """Tests that main.py has valid Python syntax.
-
     This can run in any environment.
     """
     main_script = Path(__file__).parent.parent.parent / "main.py"
@@ -271,7 +308,7 @@ def test_main_script_syntax_is_valid() -> None:
     command = [sys.executable, "-m", "py_compile", str(main_script)]
 
     try:
-        subprocess.run(  # noqa: S603
+        subprocess.run(
             command,
             capture_output=True,
             text=True,
@@ -280,6 +317,7 @@ def test_main_script_syntax_is_valid() -> None:
         )
 
         # If we get here, syntax is valid
+        print("main.py syntax is valid")
 
     except subprocess.CalledProcessError as e:
         pytest.fail(f"main.py has syntax errors:\n{e.stderr}")
@@ -288,7 +326,6 @@ def test_main_script_syntax_is_valid() -> None:
 @pytest.mark.circleci
 def test_main_script_imports_work() -> None:
     """Tests that main.py can import all required modules.
-
     This can run in any environment.
     """
     main_script = Path(__file__).parent.parent.parent / "main.py"
@@ -300,7 +337,9 @@ def test_main_script_imports_work() -> None:
     import_test_code = """
 try:
     import mail_client_api
+    import message
     import gmail_client_impl
+    import gmail_message_impl
     print("All imports successful")
 except ImportError as e:
     print(f"Import error: {e}")
@@ -310,7 +349,7 @@ except ImportError as e:
     command = [sys.executable, "-c", import_test_code]
 
     try:
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(
             command,
             capture_output=True,
             text=True,
@@ -328,7 +367,6 @@ except ImportError as e:
 @pytest.mark.circleci
 def test_application_structure_integrity() -> None:
     """Tests that the application has the expected file structure.
-
     This can run in any environment.
     """
     workspace_root = Path(__file__).parent.parent.parent
@@ -337,11 +375,11 @@ def test_application_structure_integrity() -> None:
         "main.py",
         "pyproject.toml",
         "src/mail_client_api/src/mail_client_api/__init__.py",
-        "src/mail_client_api/src/mail_client_api/client.py",
-        "src/mail_client_api/src/mail_client_api/message.py",
         "src/gmail_client_impl/src/gmail_client_impl/__init__.py",
-        "src/gmail_client_impl/src/gmail_client_impl/gmail_impl.py",
-        "src/gmail_client_impl/src/gmail_client_impl/message_impl.py",
+        "src/gmail_client_impl/src/gmail_client_impl/_impl.py",
+        "src/gmail_message_impl/src/gmail_message_impl/__init__.py",
+        "src/gmail_message_impl/src/gmail_message_impl/_impl.py",
+        "src/message/src/message/__init__.py",
     ]
 
     missing_files = []
@@ -353,3 +391,5 @@ def test_application_structure_integrity() -> None:
 
     if missing_files:
         pytest.fail(f"Missing required files: {missing_files}")
+
+    print("Application structure integrity verified")
